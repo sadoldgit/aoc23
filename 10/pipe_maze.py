@@ -17,6 +17,8 @@ class Tile:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        #part 2
+        self.on_loop = False
 
     def __repr__(self):
         return self.__doc__
@@ -102,6 +104,10 @@ class PipeMaze:
                 self.maze.append(row)
                 y += 1
         self.first_tiles = self._get_first_tiles()
+        # part 2
+        self.start_tile.on_loop = True
+        self.first_tiles[0].on_loop = True
+        self.first_tiles[1].on_loop = True
 
     def __repr__(self):
         return '\n'.join(''.join(str(tile) for tile in row) for row in self.maze)
@@ -128,6 +134,7 @@ class PipeMaze:
             next_x, next_y = next_tile.go(comming_from)
             comming_from = next_tile
             next_tile = self.maze[next_y][next_x]
+            next_tile.on_loop = True # part 2
             yield next_tile
 
     def part1_farthest_steps(self):
@@ -142,15 +149,41 @@ class PipeMaze:
             pos2 = next(path2)
         return distance + 1 # meeting point
 
+    def part2_loop_area(self):
+        # approach: scan rows, from left to right
+        # point can be inside of loop if we crossed a path
+        # and then again once more. (we are not crossing if we are on path)
+        # NOT GOOD: detect moving along the path and crossing the path
+        area = 0
+        for row in self.maze:
+            prev_tile = None
+            candidate = 0
+            for tile in row:
+                if (candidate == 0
+                    and not tile.on_loop
+                    and prev_tile is not None
+                    and prev_tile.on_loop):
+                        candidate = 1
+                elif (candidate > 0
+                    and not tile.on_loop):
+                    candidate += 1
+                elif (candidate > 0
+                    and tile.on_loop):
+                        area += candidate
+                        candidate = 0
+                prev_tile = tile
+        return area
+
 
 def main(filename):
     game = PipeMaze(filename)
     distance = game.part1_farthest_steps() # 6682
-    print(distance)
+    area = game.part2_loop_area()
+    print(distance, area)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        filename = 'input.txt'
+        filename = 'test1.txt'
     else:
         filename = sys.argv[1]
     main(filename)
